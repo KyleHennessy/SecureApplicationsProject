@@ -1,10 +1,9 @@
 <?php
 define('DB_SERVER', 'localhost');
-define('DB_USERNAME', 'secureapp_admin');
-define('DB_PASSWORD', 'admin!');
-define('DB_NAME', 'secureapps');
+define('DB_USERNAME', 'root');
+define('DB_PASSWORD', '');
 
-$mysqli = new mysqli(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
+$mysqli = new mysqli(DB_SERVER, DB_USERNAME, DB_PASSWORD);
 
 if($mysqli == false){
     die("ERROR: Could not connect. " .$mysqli->connect_error);

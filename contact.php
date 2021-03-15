@@ -26,9 +26,9 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
             <a class="navbar-brand" href="home.php">Kyle Hennessy Auth App</a>
             </div>
             <ul class="nav navbar-nav">
-            <li class="active"><a href="home.php">Home</a></li>
+            <li><a href="home.php">Home</a></li>
             <li><a href="about.php">About</a></li>
-            <li><a href="contact.php">Contact Us</a></li>
+            <li class="active"><a href="contact.php">Contact Us</a></li>
             <li><a href="changepassword.php">Change Password</a></li>
             <li><a href="eventlog.php">Event Log</a></li>
             <li><a href="logout.php">Logout</a></li>

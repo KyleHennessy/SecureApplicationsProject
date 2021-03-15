@@ -1,6 +1,66 @@
 <?php
 require_once "db.php";
 
+$user_sql ="CREATE TABLE my_db.`user` (
+    `userid` int(11) NOT NULL AUTO_INCREMENT,
+    `username` varchar(255) NOT NULL,
+    `passwordhash` char(60) NOT NULL,
+    `passwordsalt` char(60) NOT NULL,
+    `creationdatetime` datetime NOT NULL,
+    `lastlogindate` datetime NOT NULL,
+    `failedattemptscounter` int(11) NOT NULL,
+    `isadmin` tinyint(1) NOT NULL,
+    PRIMARY KEY (`userid`),
+    UNIQUE KEY `username` (`username`)
+   )";
+$eventlog_sql = "CREATE TABLE my_db.`eventlog` (
+    `logid` int(11) NOT NULL AUTO_INCREMENT,
+    `type` varchar(10) NOT NULL,
+    `description` text NOT NULL,
+    `datetimeoccured` datetime NOT NULL,
+    PRIMARY KEY (`logid`)
+   )";
+
+if($mysqli->query($user_sql)){
+    echo "<BR/>User table created!";
+}
+if($mysqli->query($eventlog_sql)){
+    echo "<BR/>Eventlog table created!";
+}
+
+
+$admin_salt = random_bytes(32);
+$admin_hashed_salt = md5($admin_salt);
+$admin_creation_datetime = date("Y-m-d H:i:s");
+$admin_password_hash = md5($admin_hashed_salt."SAD_2021!");
+// $admin_sql = "INSERT INTO my_db.user (username, passwordhash, passwordsalt, creationdatetime, isadmin) VALUES ('ADMIN', $admin_password_hash, $admin_hashed_salt, $admin_creation_datetime, 1)";
+// if($admin_stmt = $mysqli->prepare($admin_sql)){
+//     if($admin_stmt->execute()){
+//         echo "<BR/>Admin user created!";
+//     }
+//     else {
+//         echo $mysqli->error;
+//     }
+// }
+// else {
+//     echo $mysqli->error;
+// }
+
+$admin_sql = "INSERT INTO my_db.user (username, passwordhash, passwordsalt, creationdatetime, isadmin) VALUES (?, ?, ?, ?, ?)";
+if($admin_stmt = $mysqli->prepare($admin_sql)){
+    $admin_stmt->bind_param("ssssi", $paramUsername, $paramPasswordHash, $paramPasswordSalt, $paramCreationDateTime, $paramIsAdmin);
+    $paramUsername = "ADMIN";
+    $paramPasswordHash = $admin_password_hash;
+    $paramPasswordSalt = $admin_hashed_salt;
+    $paramCreationDateTime = date("Y-m-d H:i:s");
+    $paramIsAdmin = 1;
+
+    if($admin_stmt->execute()){
+        echo "<BR/> Admin user created";
+    }
+    $admin_stmt->close();
+}
+
 $username = "";
 $password = "";
 $confirmPassword = "";
@@ -16,38 +76,19 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     } else{
         $username = $_POST["username"];
         $username = PreventXSS($username);
-        echo $username . "<BR/>";
     }
-    // //validate password
-    // if(empty($_POST["password"])){
-    //     $passwordError = "please enter a password";
-    // } 
-    // elseif(strlen($_POST["password"]) < 8){
-    //     $passwordError = "must be greater than 8 characters";
-    // }
-    // elseif(!preg_match("#[0-9]+#", $password)){
-    //     $passwordError = "Password must include 1 number";
-    // }
-    // elseif(!preg_match("#[a-z]+#", $password)){
-    //     $passwordError = "Password must include a lower case letter";
-    // }
-    // elseif(!preg_match("#[A-Z]+#", $password)){
-    //     $passwordError = "Password must include an upper case letter";
-    // }
+    
     $containsuppercase = preg_match('/[A-Z]/', $_POST["password"]);
     $containslowercase = preg_match('/[a-z]/', $_POST["password"]);
     $containsnumber    = preg_match('/\d/', $_POST["password"]);
     $containsspecialchars = preg_match('/[^\w]/', $_POST["password"]);
     if(!$containsuppercase || !$containslowercase || !$containsnumber || !$containsspecialchars || strlen($_POST["password"]) < 8){
         $passwordError = "Passwords should be: <ul><li>8 characters long</li><li>Contains 1 lowercase letter</li><li>Contains 1 uppercase letter</li><li>Contains 1 number</li><li>Contains 1 special character</li></ul>";
-        echo "This is uppercase:$containsuppercase<br/>this is lowercase:$containslowercase<br/>this is number:$containsnumber<br/>this is special:$containsspecialchars<br/>";
     }
     else{
         $password = $_POST["password"];
         $password = PreventXSS($password);   
     }
-    echo $password . "<BR/>";
-
     //validate confirm password
     if(empty($_POST["confirmPassword"])){
         $confirmPasswordError = "Please confirm password";
@@ -58,11 +99,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             $confirmPasswordError = "Passwords do not match";
         }
     }
-    echo $confirmPassword . "<BR/>";
+    
 
     //create unique salt
     $isUnique = false;
-    $sql = "SELECT * FROM user WHERE passwordsalt = ?";
+    $sql = "SELECT * FROM my_db.user WHERE passwordsalt = ?";
     while (!$isUnique == true){
         if($stmt = $mysqli->prepare($sql)){
             $salt = random_bytes(32);
@@ -80,17 +121,12 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         $stmt->close();
     }
     $sql = "";
-    echo $salt . "<BR/>";
-
     //hash password and salt together
     $passwordHash = md5($passwordSalt.$password);
-    echo $passwordHash . "<BR/>";
-
     $creationDateTime = date("Y-m-d H:i:s");
-    echo $creationDateTime . "<BR/>";
     // $usernameError = $passwordError = $confirmPasswordError = "";
     if(empty($usernameError) && empty($passwordError) && empty($confirmPasswordError)){
-        $sql = "INSERT INTO user (username, passwordhash, passwordsalt, creationdatetime) VALUES (?, ?, ?, ?)";
+        $sql = "INSERT INTO my_db.user (username, passwordhash, passwordsalt, creationdatetime) VALUES (?, ?, ?, ?)";
         if($stmt = $mysqli->prepare($sql)){
             $stmt->bind_param("ssss", $paramUsername, $paramPasswordHash, $paramPasswordSalt, $paramCreationDateTime);
             $paramUsername = $username;
@@ -106,7 +142,6 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         }
     }
     $mysqli->close();
-    echo "SQL did not execute";
 }
 ?>
 <!DOCTYPE html>

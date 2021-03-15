@@ -8,6 +8,19 @@ if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
 
 require_once "db.php";
 
+//if database does not exist
+$database_sql = "CREATE DATABASE IF NOT EXISTS my_db";
+// if($mysqli->query($database_sql) === FALSE){
+//     return true;
+// }
+$db_selected = $mysqli->select_db("my_db");
+if(!$db_selected){
+    $database_sql = "CREATE DATABASE IF NOT EXISTS my_db";
+    if($mysqli->query($database_sql)){
+        echo "<BR/>Database created successfully! Tables will be created upon visiting the register page";
+    }
+}
+
 $username = "";
 $password = "";
 $usernameError = "";
@@ -18,7 +31,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     if(isset($_SESSION["loginCounter"])){
         $_SESSION["loginCounter"]++;
         if ($_SESSION["loginCounter"] > 5){
-            echo "<p class='text-danger'>You have failed to login too many times</p>";
+            echo "<head><link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.css'/></head><h2 class='text-danger'>You have failed to login too many times</p>";
             exit;
         }
     }
@@ -85,7 +98,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         $description = $loginfaileddescription;
     }
     $datetime = date('Y-m-d H:i:s');
-    $sql = "INSERT INTO eventlog (type, description, datetimeoccured) VALUES (?, ?, ?)";
+    $sql = "INSERT INTO my_db.eventlog (type, description, datetimeoccured) VALUES (?, ?, ?)";
     if($stmt = $mysqli->prepare($sql)){
         $stmt->bind_param("sss", $paramType, $paramDescription, $paramDateTimeOccured);
         $paramType = $type;

@@ -37,7 +37,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     $token = isset($_SESSION["changepasswordtoken"]) ? $_SESSION["changepasswordtoken"] : "";
     if ($_POST["token"] === $token){
         if(empty($passwordError) && empty($confirmPasswordError)){
-            $sql = "SELECT passwordsalt FROM user WHERE userid = ?";
+            $sql = "SELECT passwordsalt FROM my_db.user WHERE userid = ?";
             if($stmt = $mysqli->prepare($sql)){
                 $stmt->bind_param("i", $paramUserId);
                 $paramUserId = $_SESSION["userid"];
@@ -58,7 +58,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 $stmt->close();
             }
             $sql = "";
-            $sql = "UPDATE user SET passwordhash = ? WHERE userid = ?";
+            $sql = "UPDATE my_db.user SET passwordhash = ? WHERE userid = ?";
             if($stmt = $mysqli->prepare($sql)){
                 $stmt->bind_param("si",$paramPassword,$paramId);
 
@@ -105,10 +105,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             <a class="navbar-brand" href="home.php">Kyle Hennessy Auth App</a>
             </div>
             <ul class="nav navbar-nav">
-            <li class="active"><a href="home.php">Home</a></li>
+            <li><a href="home.php">Home</a></li>
             <li><a href="about.php">About</a></li>
             <li><a href="contact.php">Contact Us</a></li>
-            <li><a href="changepassword.php">Change Password</a></li>
+            <li class="active"><a href="changepassword.php">Change Password</a></li>
+            <li><a href="eventlog.php">Event Log</a></li>
             <li><a href="logout.php">Logout</a></li>
             </ul>
         </div>
