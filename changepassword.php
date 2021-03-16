@@ -7,35 +7,45 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     exit;
 }
 
+if (time()-$_SESSION["sessiontimer"] > 3600){
+    session_unset();
+    session_destroy();
+    header("location: login.php");
+    exit;
+}
+
 $password = $confirmPassword = "";
 $passwordError = $confirmPasswordError = "";
-
-if($_SERVER["REQUEST_METHOD"] == "POST"){
-    $containsuppercase = preg_match('/[A-Z]/', $_POST["password"]);
-    $containslowercase = preg_match('/[a-z]/', $_POST["password"]);
-    $containsnumber    = preg_match('/\d/', $_POST["password"]);
-    $containsspecialchars = preg_match('/[^\w]/', $_POST["password"]);
-    if(!$containsuppercase || !$containslowercase || !$containsnumber || !$containsspecialchars || strlen($_POST["password"]) < 8){
+$token = isset($_SESSION["changepasswordtoken"]) ? $_SESSION["changepasswordtoken"] : "";
+if(!isset($_GET["password"]) || !isset($_GET["confirmPassword"])){
+    $_GET["password"] = $_GET["confirmPassword"] = "";
+    $_GET["token"] = $token;
+}
+if($_SERVER["REQUEST_METHOD"] == "GET"){
+    $containsuppercase = preg_match('/[A-Z]/', $_GET["password"]);
+    $containslowercase = preg_match('/[a-z]/', $_GET["password"]);
+    $containsnumber    = preg_match('/\d/', $_GET["password"]);
+    $containsspecialchars = preg_match('/[^\w]/', $_GET["password"]);
+    if(!$containsuppercase || !$containslowercase || !$containsnumber || !$containsspecialchars || strlen($_GET["password"]) < 8){
         $passwordError = "Passwords should be: <ul><li>8 characters long</li><li>Contains 1 lowercase letter</li><li>Contains 1 uppercase letter</li><li>Contains 1 number</li><li>Contains 1 special character</li></ul>";
-        echo "This is uppercase:$containsuppercase<br/>this is lowercase:$containslowercase<br/>this is number:$containsnumber<br/>this is special:$containsspecialchars<br/>";
     }
     else{
-        $password = $_POST["password"];
+        $password = $_GET["password"];
         $password = PreventXSS($password);   
     }
 
-    if(empty($_POST["confirmPassword"])){
+    if(empty($_GET["confirmPassword"])){
         $confirmPasswordError = "Please enter a password that matches your new one.";
     }
     else{
-        $confirmPassword = $_POST["confirmPassword"];
+        $confirmPassword = $_GET["confirmPassword"];
         $confirmPassword = PreventXSS($confirmPassword);
         if(empty($passwordError) && ($password != $confirmPassword)){
             $confirmPasswordError = "Passwords do not match";
         }
     }
-    $token = isset($_SESSION["changepasswordtoken"]) ? $_SESSION["changepasswordtoken"] : "";
-    if ($_POST["token"] === $token){
+    
+    if ($_GET["token"] === $token){
         if(empty($passwordError) && empty($confirmPasswordError)){
             $sql = "SELECT passwordsalt FROM my_db.user WHERE userid = ?";
             if($stmt = $mysqli->prepare($sql)){
@@ -69,6 +79,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                     session_destroy();
                     echo "<BR/>password changed. New password hash = " . $newHashedPassword;
                     echo "<BR/>password Salt = " . $passwordSalt;
+                    unset($_SESSION["changepasswordtoken"]);
                     header("location: login.php");
                     exit;
                 }
@@ -79,10 +90,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             }
         }
         $mysqli->close();
-        unset($_SESSION["changepasswordtoken"]);
+        
     }
     else{
-        //log csrf attack
+        // header("location: logout.php");
+        // exit;
     }
 }
 ?>
@@ -93,9 +105,9 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.css"/>
     <link rel="stylesheet" href="site.css"/>
+    <meta http-equiv="refresh" content="900;url=logout.php"/>
     <style type="text/css">
         body{ font: 14px sans-serif; }
-        .wrapper{ width: 350px; padding: 20px; }
     </style>
 </head>
 <body>
@@ -117,7 +129,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     <div class="container">
         <h2>Reset Password</h2>
         <p>To change your password please enter it below</p>
-        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" method="post">
+        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" method="GET">
             <input type="hidden" name="token" value="<?php echo $token; ?>" />
             <div class="form-group <?php echo (!empty($passwordError)) ? 'has-error' : '';?>">
                 <label>Password</label>
@@ -137,7 +149,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 <input type="submit" class="btn btn-primary" value="Submit">
                 <input type="reset" class="btn btn-danger" value="Reset">
             </div>
-            <p><a href="login.php"> Or login here.</a></p>
+       
         </form>
     </div>
 </body>

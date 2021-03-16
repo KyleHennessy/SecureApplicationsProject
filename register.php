@@ -7,8 +7,6 @@ $user_sql ="CREATE TABLE my_db.`user` (
     `passwordhash` char(60) NOT NULL,
     `passwordsalt` char(60) NOT NULL,
     `creationdatetime` datetime NOT NULL,
-    `lastlogindate` datetime NOT NULL,
-    `failedattemptscounter` int(11) NOT NULL,
     `isadmin` tinyint(1) NOT NULL,
     PRIMARY KEY (`userid`),
     UNIQUE KEY `username` (`username`)
@@ -33,18 +31,6 @@ $admin_salt = random_bytes(32);
 $admin_hashed_salt = md5($admin_salt);
 $admin_creation_datetime = date("Y-m-d H:i:s");
 $admin_password_hash = md5($admin_hashed_salt."SAD_2021!");
-// $admin_sql = "INSERT INTO my_db.user (username, passwordhash, passwordsalt, creationdatetime, isadmin) VALUES ('ADMIN', $admin_password_hash, $admin_hashed_salt, $admin_creation_datetime, 1)";
-// if($admin_stmt = $mysqli->prepare($admin_sql)){
-//     if($admin_stmt->execute()){
-//         echo "<BR/>Admin user created!";
-//     }
-//     else {
-//         echo $mysqli->error;
-//     }
-// }
-// else {
-//     echo $mysqli->error;
-// }
 
 $admin_sql = "INSERT INTO my_db.user (username, passwordhash, passwordsalt, creationdatetime, isadmin) VALUES (?, ?, ?, ?, ?)";
 if($admin_stmt = $mysqli->prepare($admin_sql)){
@@ -83,7 +69,13 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     $containsnumber    = preg_match('/\d/', $_POST["password"]);
     $containsspecialchars = preg_match('/[^\w]/', $_POST["password"]);
     if(!$containsuppercase || !$containslowercase || !$containsnumber || !$containsspecialchars || strlen($_POST["password"]) < 8){
-        $passwordError = "Passwords should be: <ul><li>8 characters long</li><li>Contains 1 lowercase letter</li><li>Contains 1 uppercase letter</li><li>Contains 1 number</li><li>Contains 1 special character</li></ul>";
+        $passwordError = "Passwords should be: <ul>
+                                                   <li>8 characters long</li>
+                                                   <li>Contains 1 lowercase letter</li>
+                                                   <li>Contains 1 uppercase letter</li>
+                                                   <li>Contains 1 number</li>
+                                                   <li>Contains 1 special character</li>
+                                                </ul>";
     }
     else{
         $password = $_POST["password"];
@@ -100,7 +92,6 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         }
     }
     
-
     //create unique salt
     $isUnique = false;
     $sql = "SELECT * FROM my_db.user WHERE passwordsalt = ?";
@@ -124,7 +115,6 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     //hash password and salt together
     $passwordHash = md5($passwordSalt.$password);
     $creationDateTime = date("Y-m-d H:i:s");
-    // $usernameError = $passwordError = $confirmPasswordError = "";
     if(empty($usernameError) && empty($passwordError) && empty($confirmPasswordError)){
         $sql = "INSERT INTO my_db.user (username, passwordhash, passwordsalt, creationdatetime) VALUES (?, ?, ?, ?)";
         if($stmt = $mysqli->prepare($sql)){
@@ -153,7 +143,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     <link rel="stylesheet" href="site.css"/>
     <style type="text/css">
         body{ font: 14px sans-serif; }
-        .wrapper{ width: 350px; padding: 20px; }
+        .wrapper{ width: 500px; padding: 20px; }
     </style>
 </head>
 <body>

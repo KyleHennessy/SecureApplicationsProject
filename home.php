@@ -6,6 +6,12 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     header("location: login.php");
     exit;
 }
+if (time()-$_SESSION["sessiontimer"] > 3600){
+    session_unset();
+    session_destroy();
+    header("location: login.php");
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -14,6 +20,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.css"/>
     <link rel="stylesheet" href="site.css"/>
+    <meta http-equiv="refresh" content="900;url=logout.php"/>
     <style type="text/css">
         body{ font: 14px sans-serif; }
         .wrapper{  padding: 20px; }

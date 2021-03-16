@@ -1,4 +1,5 @@
 <?php
+set_time_limit(500);
 session_start();
 //check if user is logged in already
 if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
@@ -10,9 +11,6 @@ require_once "db.php";
 
 //if database does not exist
 $database_sql = "CREATE DATABASE IF NOT EXISTS my_db";
-// if($mysqli->query($database_sql) === FALSE){
-//     return true;
-// }
 $db_selected = $mysqli->select_db("my_db");
 if(!$db_selected){
     $database_sql = "CREATE DATABASE IF NOT EXISTS my_db";
@@ -31,7 +29,12 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     if(isset($_SESSION["loginCounter"])){
         $_SESSION["loginCounter"]++;
         if ($_SESSION["loginCounter"] > 5){
-            echo "<head><link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.css'/></head><h2 class='text-danger'>You have failed to login too many times</p>";
+            echo "<head><link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.css'/></head><h2 class='text-danger'>You have failed to login too many times. Try again in 3 minutes</p></h2>";
+            ob_end_flush();
+            flush();
+            sleep(180);
+            $_SESSION["loginCounter"] = 0;
+
             exit;
         }
     }
@@ -73,6 +76,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                         $_SESSION["loggedin"] = true;
                         $_SESSION["userid"] = $userid;
                         $_SESSION["username"] = $username;
+                        $_SESSION["sessiontimer"] = time();
                         $_SESSION["changepasswordtoken"] = md5(uniqid());
                         $_SESSION["isadmin"] = $isadmin;
                         header("location:home.php");
@@ -80,7 +84,9 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                     }
                 }
                 echo "<p class='text-danger'>The username '" . $username ."' and password could not be authenticated at the moment</p>";
-                $loginfaileddescription = "Unsuccessful login for username: " . $username;
+                if($passwordError != "please enter a password"){
+                    $loginfaileddescription = "Unsuccessful login for username: " . $username;
+                }
             }
             else{
                 echo "Could not connect to the database <BR/>";
@@ -94,8 +100,14 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         $description = $loginsuccessdescription;
     }
     else{
-        $type = "FAILURE";
-        $description = $loginfaileddescription;
+        if ($passwordError === "please enter a password"){
+            $type = "FAILURE";
+            $description = "Fields were left empty";
+        }
+        else{
+            $type = "FAILURE";
+            $description = $loginfaileddescription;
+        }
     }
     $datetime = date('Y-m-d H:i:s');
     $sql = "INSERT INTO my_db.eventlog (type, description, datetimeoccured) VALUES (?, ?, ?)";
@@ -119,7 +131,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     <link rel="stylesheet" href="site.css"/>
     <style type="text/css">
         body{ font: 14px sans-serif; }
-        .wrapper{ width: 350px; padding: 20px; }
+        .wrapper{ width: 500px; padding: 20px; }
     </style>
 </head>
 <body>
