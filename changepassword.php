@@ -27,7 +27,13 @@ if($_SERVER["REQUEST_METHOD"] == "GET"){
     $containsnumber    = preg_match('/\d/', $_GET["password"]);
     $containsspecialchars = preg_match('/[^\w]/', $_GET["password"]);
     if(!$containsuppercase || !$containslowercase || !$containsnumber || !$containsspecialchars || strlen($_GET["password"]) < 8){
-        $passwordError = "Passwords should be: <ul><li>8 characters long</li><li>Contains 1 lowercase letter</li><li>Contains 1 uppercase letter</li><li>Contains 1 number</li><li>Contains 1 special character</li></ul>";
+        $passwordError = "Passwords should be: <ul>
+                                                    <li>8 characters long</li>
+                                                    <li>Contains 1 lowercase letter</li>
+                                                    <li>Contains 1 uppercase letter</li>
+                                                    <li>Contains 1 number</li>
+                                                    <li>Contains 1 special character</li>
+                                                </ul>";
     }
     else{
         $password = $_GET["password"];
@@ -47,38 +53,36 @@ if($_SERVER["REQUEST_METHOD"] == "GET"){
     
     if ($_GET["token"] === $token){
         if(empty($passwordError) && empty($confirmPasswordError)){
-            $sql = "SELECT passwordsalt FROM my_db.user WHERE userid = ?";
-            if($stmt = $mysqli->prepare($sql)){
-                $stmt->bind_param("i", $paramUserId);
-                $paramUserId = $_SESSION["userid"];
-                if($stmt->execute()){
-                    $stmt->store_result();
-                    if($stmt->num_rows==1){
-                        $passwordSalt = "";
-                        $stmt->bind_result($passwordSalt);
-                        $stmt->fetch();
-                        echo $passwordSalt . "<BR/>";
-                        $newHashedPassword = md5($passwordSalt.$password);
-                        echo $newHashedPassword . "<BR/>";
+            $isUnique = false;
+            $sql = "SELECT * FROM my_db.user WHERE passwordsalt = ?";
+            while (!$isUnique){
+                if($stmt = $mysqli->prepare($sql)){
+                    $salt = random_bytes(32);
+                    $hashedSalt = md5($salt);
+                    $stmt->bind_param("s", $paramSalt);
+                    $paramSalt = $hashedSalt;
+                    if($stmt->execute()){
+                        $stmt->store_result();
+                        if($stmt->num_rows == 0){
+                            $isUnique = true;
+                            $passwordSalt = $hashedSalt;
+                        }
                     }
-                }
-                else{
-                    echo "Cant find user <BR/>";
                 }
                 $stmt->close();
             }
             $sql = "";
-            $sql = "UPDATE my_db.user SET passwordhash = ? WHERE userid = ?";
+            $newHashedPassword = md5($passwordSalt.$password);
+            $sql = "UPDATE my_db.user SET passwordhash = ?, passwordsalt = ? WHERE userid = ?";
             if($stmt = $mysqli->prepare($sql)){
-                $stmt->bind_param("si",$paramPassword,$paramId);
+                $stmt->bind_param("ssi",$paramPassword,$paramSalt,$paramId);
 
                 $paramPassword = $newHashedPassword;
+                $paramSalt = $passwordSalt;
                 $paramId = $_SESSION["userid"];
 
                 if($stmt->execute()){
                     session_destroy();
-                    echo "<BR/>password changed. New password hash = " . $newHashedPassword;
-                    echo "<BR/>password Salt = " . $passwordSalt;
                     unset($_SESSION["changepasswordtoken"]);
                     header("location: login.php");
                     exit;
@@ -93,8 +97,8 @@ if($_SERVER["REQUEST_METHOD"] == "GET"){
         
     }
     else{
-        // header("location: logout.php");
-        // exit;
+        header("location: logout.php");
+        exit;
     }
 }
 ?>

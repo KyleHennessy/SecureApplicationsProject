@@ -28,13 +28,12 @@ $passwordError = "";
 if($_SERVER["REQUEST_METHOD"] == "POST"){
     if(isset($_SESSION["loginCounter"])){
         $_SESSION["loginCounter"]++;
-        if ($_SESSION["loginCounter"] > 5){
+        if ($_SESSION["loginCounter"] > 4){
             echo "<head><link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.css'/></head><h2 class='text-danger'>You have failed to login too many times. Try again in 3 minutes</p></h2>";
             ob_end_flush();
             flush();
             sleep(180);
             $_SESSION["loginCounter"] = 0;
-
             exit;
         }
     }
@@ -83,7 +82,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                         $loginsuccessdescription = "Successful login for username: '" . $username . "' and userId: '" . $userid . "'";
                     }
                 }
-                echo "<p class='text-danger'>The username '" . $username ."' and password could not be authenticated at the moment</p>";
+                echo "<p class='text-danger'>The username '" . preventXSS($username) ."' and password could not be authenticated at the moment</p>";
                 if($passwordError != "please enter a password"){
                     $loginfaileddescription = "Unsuccessful login for username: " . $username;
                 }
